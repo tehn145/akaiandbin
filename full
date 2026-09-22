@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Bin & Akai // Eternal Bloom</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        romance: {
+                            rose: '#fff1f2',
+                            pink: '#fb7185',
+                            peach: '#ffe4e6',
+                            gold: '#fcd34d',
+                            lavender: '#f3e8ff',
+                            dark: '#4c0519'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 45%, #f3e8ff 100%);
+            color: #4c0519;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+        .serif-title { font-family: 'Playfair Display', serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 182, 193, 0.4);
+            box-shadow: 0 20px 40px rgba(244, 63, 94, 0.08);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-12px) scale(1.03); }
+        }
+        .floating-heart { animation: float 4s ease-in-out infinite; }
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 25px rgba(244, 63, 94, 0.5)); }
+        }
+        .pulse-core { animation: pulse-soft 2.5s infinite ease-in-out; }
+
+        /* Twinkling stars layer */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.15; transform: scale(0.8); }
+            50% { opacity: 0.9; transform: scale(1.15); }
+        }
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, #fda4af 70%, transparent 100%);
+            animation: twinkle ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        /* Ribbon shimmer for hero eyebrow */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .shimmer-text {
+            background: linear-gradient(90deg, #e11d48 0%, #fb7185 25%, #fcd34d 50%, #fb7185 75%, #e11d48 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: shimmer 4s linear infinite;
+        }
+
+        /* Letter flip card */
+        .letter-scene { perspective: 1600px; }
+        .letter-flip {
+            transform-style: preserve-3d;
+            transition: transform 0.9s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        .letter-flip.opened { transform: rotateY(180deg); }
+        .letter-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .letter-back { transform: rotateY(180deg); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #fff1f2; }
+        ::-webkit-scrollbar-thumb { background: #fb7185; border-radius: 3px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .floating-heart, .pulse-core, .star, .shimmer-text { animation: none !important; }
+        }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between min-h-screen selection:bg-rose-200 selection:text-rose-900">
+
+    <!-- Twinkling starfield -->
+    <div id="starfield" class="fixed inset-0 z-0 pointer-events-none overflow-hidden"></div>
+
+    <!-- Interactive Canvas Background for floating petals, sparkles & mouse trailing hearts -->
+    <canvas id="romance-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+    <!-- Top Minimalist Header -->
+    <header class="relative z-10 w-full px-6 py-6 flex items-center justify-between max-w-6xl mx-auto">
+        <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+            <span class="font-serif italic text-rose-800 text-sm md:text-base tracking-wide">Bin & Akai</span>
+        </div>
+        <div class="flex items-center space-x-2 md:space-x-3">
+            <a id="song-link" href="https://www.youtube.com/results?search_query=50+N%C4%83m+V%E1%BB%81+Sau+Da+LAB" target="_blank" rel="noopener noreferrer"
+               class="px-3 md:px-4 py-2 rounded-full glass-card text-rose-700 hover:bg-rose-500 hover:text-white transition-all text-xs md:text-sm font-medium flex items-center space-x-2 shadow-sm">
+                <span>🎵</span>
+                <span class="hidden sm:inline">Nghe "50 Năm Về Sau"</span>
+                <span class="sm:hidden">Bài hát</span>
+            </a>
+            <button id="music-toggle" class="px-4 py-2 rounded-full glass-card text-rose-700 hover:bg-rose-500 hover:text-white transition-all text-xs md:text-sm font-medium flex items-center space-x-2 shadow-sm">
+                <span id="music-icon">♪</span>
+                <span id="music-text" class="hidden sm:inline">Nhạc nền: Tắt</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="relative z-10 flex-grow max-w-5xl w-full mx-auto px-4 py-4 md:py-8 flex flex-col items-center justify-center space-y-12">
+
+        <!-- Hero Title Section -->
+        <div class="text-center space-y-3">
+            <div class="inline-block px-4 py-1 rounded-full bg-white/80 border border-rose-200 text-xs tracking-widest uppercase font-medium shadow-sm">
+                <span class="shimmer-text">Timeless Connection</span>
+            </div>
+            <h1 class="serif-title text-5xl md:text-8xl font-bold tracking-tight text-rose-950">
+                Bin <span class="text-rose-500 font-normal italic">&</span> Akai
+            </h1>
+            <p class="text-xs md:text-sm text-rose-800/70 font-light tracking-wider max-w-md mx-auto">
+                Chạm vào màn hình để tạo ra những cánh hoa, ánh sao và nhịp đập yêu thương.
+            </p>
+        </div>
+
+        <!-- Central Interactive Glowing Heart Core & Bloom Widget -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full items-center">
+
+            <!-- Left Interactive Bloom Card -->
+            <div class="glass-card p-6 md:p-8 rounded-3xl text-center space-y-4 hover:border-rose-300 transition-all">
+                <div class="text-xs tracking-wider uppercase text-rose-500 font-semibold">Tình Cảm Hiện Tại</div>
+                <div id="bloom-level" class="serif-title text-4xl md:text-5xl font-bold text-rose-900">100%</div>
+                <p class="text-xs text-rose-700/80">Bông hoa tình yêu nở rộ mãi mãi không phai.</p>
+                <button id="bloom-btn" class="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium text-xs md:text-sm shadow-md hover:opacity-95 transition-all transform active:scale-95">
+                    Gửi Thêm Yêu Thương 🌸
+                </button>
+            </div>
+
+            <!-- Center Pulsing 3D Heart Visualizer -->
+            <div class="flex flex-col items-center justify-center relative">
+                <div class="absolute w-48 h-48 rounded-full bg-rose-300/30 blur-3xl animate-pulse"></div>
+                <div class="floating-heart pulse-core cursor-pointer z-10 p-6" id="central-heart" title="Nhấn để lan tỏa trái tim!">
+                    <svg class="w-32 md:w-40 h-32 md:h-40 text-rose-500 fill-current drop-shadow-[0_15px_25px_rgba(244,63,94,0.3)] transition-transform hover:scale-110" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </div>
+                <span id="interaction-hint" class="mt-2 text-xs font-serif italic text-rose-600 animate-bounce">Chạm hoặc click vào trái tim</span>
+            </div>
+
+            <!-- Right Interactive Love Quote Card -->
+            <div class="glass-card p-6 md:p-8 rounded-3xl text-center space-y-4 hover:border-rose-300 transition-all">
+                <div class="text-xs tracking-wider uppercase text-rose-500 font-semibold">Khoảnh Khắc Vàng</div>
+                <div id="quote-display" class="serif-title text-base md:text-lg italic text-rose-900 min-h-[70px] flex items-center justify-center transition-opacity duration-200">
+                    "Bin & Akai là bản giao hưởng ngọt ngào nhất của thời gian."
+                </div>
+                <button id="new-quote-btn" class="w-full py-3 rounded-2xl bg-white border border-rose-200 text-rose-700 font-medium text-xs md:text-sm hover:bg-rose-50 transition-all shadow-sm">
+                    Đổi Lời Nhắn ✨
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Love Letter Flip Card -->
+        <div class="w-full max-w-md mx-auto letter-scene">
+            <p class="text-center text-xs text-rose-700/70 italic mb-3">Chạm vào phong thư để mở bức thư nhỏ</p>
+            <div id="letter-flip" class="letter-flip relative w-full aspect-[4/3] cursor-pointer">
+                <!-- Front: envelope -->
+                <div class="letter-face absolute inset-0 glass-card rounded-3xl flex flex-col items-center justify-center space-y-3">
+                    <span class="text-5xl">💌</span>
+                    <span class="font-serif italic text-rose-800 text-sm">Một bức thư dành cho em</span>
+                </div>
+                <!-- Back: message -->
+                <div class="letter-face letter-back absolute inset-0 glass-card rounded-3xl flex flex-col items-center justify-center px-6 text-center space-y-2">
+                    <span class="text-2xl">🤍</span>
+                    <p class="serif-title italic text-rose-900 text-sm md:text-base leading-relaxed">
+                        Cảm ơn vì em đã xuất hiện cùng anh.
+                        Cảm ơn em đã cố gắng vì anh, vì chúng ta.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Interactive Bubbles Section -->
+        <div class="w-full glass-card p-6 md:p-8 rounded-3xl text-center space-y-6">
+            <h2 class="serif-title text-2xl md:text-3xl font-bold text-rose-950">Ký Ức Đóa Hồng</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="p-4 rounded-2xl bg-white/60 border border-rose-100 space-y-2 hover:bg-white/90 hover:-translate-y-1 transition-all">
+                    <span class="text-xl">✨</span>
+                    <h3 class="font-semibold text-rose-900 text-sm">Gặp Gỡ Đầu Tiên</h3>
+                    <p class="text-xs text-rose-700/80">Khoảnh khắc thế giới thu bé lại vừa bằng ánh mắt.</p>
+                </div>
+                <div class="p-4 rounded-2xl bg-white/60 border border-rose-100 space-y-2 hover:bg-white/90 hover:-translate-y-1 transition-all">
+                    <span class="text-xl">🌹</span>
+                    <h3 class="font-semibold text-rose-900 text-sm">Cùng Nhau Sẻ Chia</h3>
+                    <p class="text-xs text-rose-700/80">Mỗi ngày trôi qua đều là một trang nhật ký ngọt ngào.</p>
+                </div>
+                <div class="p-4 rounded-2xl bg-white/60 border border-rose-100 space-y-2 hover:bg-white/90 hover:-translate-y-1 transition-all">
+                    <span class="text-xl">💫</span>
+                    <h3 class="font-semibold text-rose-900 text-sm">Tương Lai Vĩnh Cửu</h3>
+                    <p class="text-xs text-rose-700/80">Nắm tay nhau đi đến tận cùng của yêu thương.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 w-full py-6 text-center text-xs font-serif italic text-rose-800/80">
+        <p>Dành riêng cho <span class="font-bold text-rose-900">Bin</span> & <span class="font-bold text-rose-900">Akai</span> 🤍</p>
+    </footer>
+
+    <!-- Script for Canvas Animation, Falling Petals, Sparkles, Mouse Trails, Starfield & Audio -->
+    <script>
+        // ---------- Starfield ----------
+        const starfield = document.getElementById('starfield');
+        const starCount = 28;
+        for (let i = 0; i < starCount; i++) {
+            const s = document.createElement('div');
+            const size = Math.random() * 3 + 1.5;
+            s.className = 'star';
+            s.style.width = size + 'px';
+            s.style.height = size + 'px';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.top = Math.random() * 60 + '%';
+            s.style.animationDuration = (Math.random() * 3 + 2.5) + 's';
+            s.style.animationDelay = (Math.random() * 4) + 's';
+            starfield.appendChild(s);
+        }
+
+        // ---------- Canvas: petals, hearts, sparkles, trails ----------
+        const canvas = document.getElementById('romance-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const particles = [];
+        const maxParticles = 55;
+
+        function makeAmbientParticle() {
+            const roll = Math.random();
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 8 + 4,
+                speedY: Math.random() * 0.8 + 0.3,
+                speedX: (Math.random() - 0.5) * 0.6,
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 2,
+                opacity: Math.random() * 0.5 + 0.3,
+                color: Math.random() > 0.5 ? '#fb7185' : '#fda4af',
+                type: roll > 0.65 ? 'heart' : (roll > 0.35 ? 'petal' : 'sparkle'),
+                twinkle: Math.random() * Math.PI * 2
+            };
+        }
+
+        for (let i = 0; i < maxParticles; i++) particles.push(makeAmbientParticle());
+
+        const trailParticles = [];
+        let lastTrailTime = 0;
+        window.addEventListener('mousemove', (e) => {
+            const now = performance.now();
+            if (now - lastTrailTime > 40) {
+                lastTrailTime = now;
+                trailParticles.push({
+                    x: e.clientX,
+                    y: e.clientY,
+                    size: Math.random() * 10 + 6,
+                    speedX: (Math.random() - 0.5) * 2,
+                    speedY: (Math.random() - 1) * 2 - 1,
+                    opacity: 0.85,
+                    glyph: Math.random() > 0.5 ? '🌸' : '✨'
+                });
+            }
+        });
+
+        function burstAt(x, y, count, glyphs) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3.5 + 1.2;
+                trailParticles.push({
+                    x, y,
+                    size: Math.random() * 14 + 8,
+                    speedX: Math.cos(angle) * speed,
+                    speedY: Math.sin(angle) * speed,
+                    opacity: 1,
+                    glyph: glyphs[Math.floor(Math.random() * glyphs.length)]
+                });
+            }
+        }
+
+        window.addEventListener('click', (e) => {
+            burstAt(e.clientX, e.clientY, 10, ['💗', '🌸', '✨']);
+        });
+
+        function animate(ts) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.y -= p.speedY;
+                p.x += p.speedX + Math.sin(p.y / 30) * 0.3;
+                p.rotation += p.rotSpeed;
+                p.twinkle += 0.05;
+
+                if (p.y < -20) {
+                    p.y = canvas.height + 20;
+                    p.x = Math.random() * canvas.width;
+                }
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+
+                if (p.type === 'petal') {
+                    ctx.globalAlpha = p.opacity;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, p.size, p.size / 2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (p.type === 'heart') {
+                    ctx.globalAlpha = p.opacity;
+                    ctx.font = `${p.size * 1.5}px sans-serif`;
+                    ctx.fillText('❤️', -p.size / 2, p.size / 2);
+                } else {
+                    // sparkle: twinkling four-point star
+                    const tw = (Math.sin(p.twinkle) + 1) / 2;
+                    ctx.globalAlpha = p.opacity * (0.3 + tw * 0.7);
+                    ctx.fillStyle = '#fcd34d';
+                    const r = p.size * (0.6 + tw * 0.4);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -r);
+                    ctx.lineTo(r * 0.25, -r * 0.25);
+                    ctx.lineTo(r, 0);
+                    ctx.lineTo(r * 0.25, r * 0.25);
+                    ctx.lineTo(0, r);
+                    ctx.lineTo(-r * 0.25, r * 0.25);
+                    ctx.lineTo(-r, 0);
+                    ctx.lineTo(-r * 0.25, -r * 0.25);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            for (let i = trailParticles.length - 1; i >= 0; i--) {
+                let tp = trailParticles[i];
+                tp.x += tp.speedX;
+                tp.y += tp.speedY;
+                tp.opacity -= 0.02;
+
+                if (tp.opacity <= 0) {
+                    trailParticles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = tp.opacity;
+                ctx.font = `${tp.size}px sans-serif`;
+                ctx.fillText(tp.glyph, tp.x, tp.y);
+                ctx.restore();
+            }
+
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        // ---------- Quotes ----------
+        const quotes = [
+            "\"Bin & Akai là bản giao hưởng ngọt ngào nhất của thời gian.\"",
+            "\"Nơi nào có Akai, nơi đó có bình yên và hạnh phúc trọn vẹn dành cho Bin.\"",
+            "\"Tình yêu hiện đại của Bin và Akai: Nhẹ nhàng, trong trẻo và vĩnh cửu.\"",
+            "\"Mỗi nhịp đập trái tim đều thì thầm tên nhau: Bin & Akai.\"",
+            "\"Có nhau là đủ, mọi con đường rồi sẽ dẫn về một hướng.\"",
+            "\"Thương nhau không cần nói nhiều, chỉ cần ở lại là đủ.\""
+        ];
+
+        const quoteDisplay = document.getElementById('quote-display');
+        const newQuoteBtn = document.getElementById('new-quote-btn');
+        newQuoteBtn.addEventListener('click', () => {
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            quoteDisplay.style.opacity = 0;
+            setTimeout(() => {
+                quoteDisplay.innerText = randomQuote;
+                quoteDisplay.style.opacity = 1;
+            }, 200);
+        });
+
+        // ---------- Bloom button ----------
+        const bloomBtn = document.getElementById('bloom-btn');
+        const bloomLevel = document.getElementById('bloom-level');
+        let loveScore = 100;
+        bloomBtn.addEventListener('click', (e) => {
+            loveScore += 52;
+            bloomLevel.innerText = loveScore + "+";
+            bloomLevel.classList.add('scale-125', 'text-rose-500');
+            setTimeout(() => bloomLevel.classList.remove('scale-125', 'text-rose-500'), 300);
+            const rect = bloomBtn.getBoundingClientRect();
+            burstAt(rect.left + rect.width / 2, rect.top, 12, ['🌸', '💗']);
+        });
+
+        // ---------- Central heart ----------
+        const centralHeart = document.getElementById('central-heart');
+        centralHeart.addEventListener('click', () => {
+            loveScore += 10;
+            bloomLevel.innerText = loveScore + "%";
+            const rect = centralHeart.getBoundingClientRect();
+            burstAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 22, ['❤️', '💗', '✨']);
+        });
+
+        // ---------- Love letter flip ----------
+        const letterFlip = document.getElementById('letter-flip');
+        letterFlip.addEventListener('click', () => {
+            letterFlip.classList.toggle('opened');
+            const rect = letterFlip.getBoundingClientRect();
+            burstAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 8, ['💌', '✨']);
+        });
+
+        // ---------- Ambient music (original composition, not a reproduction of any existing song) ----------
+        let audioCtx = null;
+        let isPlaying = false;
+        let scheduleTimer = null;
+        let musicNodes = [];
+
+        const musicToggle = document.getElementById('music-toggle');
+        const musicIcon = document.getElementById('music-icon');
+        const musicText = document.getElementById('music-text');
+
+        // Gentle looping chord progression (I - vi - IV - V feel), all original.
+        const chordProgression = [
+            [261.63, 329.63, 392.00],   // C major
+            [220.00, 261.63, 329.63],   // A minor
+            [174.61, 220.00, 261.63],   // F major
+            [196.00, 246.94, 293.66]    // G major
+        ];
+        let chordIndex = 0;
+
+        function playChord(chord) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const chordGain = audioCtx.createGain();
+            chordGain.gain.setValueAtTime(0, now);
+            chordGain.gain.linearRampToValueAtTime(0.05, now + 0.6);
+            chordGain.gain.linearRampToValueAtTime(0.0, now + 3.6);
+            chordGain.connect(audioCtx.destination);
+
+            chord.forEach(freq => {
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now);
+                osc.connect(chordGain);
+                osc.start(now);
+                osc.stop(now + 3.8);
+                musicNodes.push(osc);
+            });
+        }
+
+        function scheduleNextChord() {
+            playChord(chordProgression[chordIndex % chordProgression.length]);
+            chordIndex++;
+            scheduleTimer = setTimeout(scheduleNextChord, 3500);
+        }
+
+        musicToggle.addEventListener('click', () => {
+            if (!isPlaying) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                chordIndex = 0;
+                scheduleNextChord();
+                isPlaying = true;
+                musicIcon.innerText = "⏸";
+                musicText.innerText = "Nhạc nền: Bật";
+                musicToggle.classList.add('bg-rose-500', 'text-white');
+            } else {
+                if (scheduleTimer) clearTimeout(scheduleTimer);
+                musicNodes.forEach(n => { try { n.stop(); } catch (e) {} });
+                musicNodes = [];
+                if (audioCtx) audioCtx.close();
+                audioCtx = null;
+                isPlaying = false;
+                musicIcon.innerText = "♪";
+                musicText.innerText = "Nhạc nền: Tắt";
+                musicToggle.classList.remove('bg-rose-500', 'text-white');
+            }
+        });
+    </script>
+</body>
+</html>
